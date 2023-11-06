@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<section class="section-content padding-y bg">
+<div class="container">
+    <div class="card">
+            <main class="col-md-20 border-left">
+            <article class="content-body">
+                <center><h4 class="title">Ask a question!</h4><br><br>
+            
+                <form action="{% url 'ask_question' %}">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-md-10">
+                                <input class="form-control" type="text" name="question" id="question" required>
+                            </div>
+                            <div class="col-md-1">
+                                <button class="btn btn-secondary" type="submit"><i class="fa fa-lightbulb-o"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                </center>
+                <br><br>
+
+                <h6 class="form-control-plaintext">{{describe_query_result}}</h6>
+
+                {% if is_query_generated %}
+                    <div class="mt-3">
+                        <h8 class="form-control-plaintext">Note: Following is the query generated from the LLM. </h8>
+                        <textarea rows="4" class="form-control" readonly>{{ query }}</textarea>
+                        <br>
+                    </div>
+                    
+                {% endif %}
+                
+            </article>
+            </main>
+    </div>
+</div> <!-- container .//  -->
+</section>
+<!-- ========================= SECTION CONTENT END// ========================= -->
+
+{% endblock %}

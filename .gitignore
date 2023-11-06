@@ -1,0 +1,27 @@
+.git
+*.log
+*.pot
+*.pyc
+.DS_Store
+__pycache__
+__pycache__/
+__pycache__/*
+*/__pycache__
+*/__pycache__/
+*/__pycache__/*
+*__pycache__
+*__pycache__/
+*__pycache__/*
+.env
+env/
+venv/
+env/*
+venv/*
+env
+venv
+
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml

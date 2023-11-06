@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<section class="section-content padding-y bg">
+<div class="container">
+
+<!-- ============================ COMPONENT 1 ================================= -->
+<div class="card">
+	<div class="row no-gutters">
+    <article class="content-body">
+      <div class="mb-4">
+        <center>
+        <h2 class="title">{{single_product.product_name}}</h2>
+        <br><br>
+
+        <div class="img-big-wrap mainImage">
+            <center><a href="{{ single_product.get_url }}"><img src="{{single_product.images.url}}"></a></center>
+        </div> <!-- img-big-wrap.// -->
+
+        </center>
+				<form action="{% url 'create_design_ideas' single_product.id %}">
+                    <br>
+                        <div class="container" style="width: 60%;">
+                            <div class="row">
+                                <div class="col">
+                                    <button type="submit" class="btn btn-primary" name="delete_all"> <span class="text">Delete all generated images</span> <i class="fa fa-trash"></i> </button><br>
+                                </div>
+                                <div>&nbsp;&nbsp;</div>
+                                <div class="col">
+                                    <a href="{{ single_product.get_url }}" class="btn btn-outline-primary">Go back <i class="fa fa-chevron-circle-left"></i></a>
+                                </div>
+                            </div>
+                        </div>
+                            <br><br>
+                            <h4 class="form-group name1 col-md-10">Create new design ideas</h4><br>
+                            <div class="form-group name1 col-md-10">
+                                <div class="form-group row-md-8">
+                                    <p>Enter prompt for creating new design ideas</p>
+                                    {% if request.session.change_prompt %}
+                                    <textarea name="change_prompt" rows="6" class="form-control" placeholder="Enter your image prompt here.">{{ request.session.change_prompt }}</textarea>
+                                    {% else %}
+                                        <textarea name="change_prompt" rows="6" class="form-control" placeholder="Enter your image prompt here."></textarea>
+                                    {% endif %}
+                                </div>
+                            </div>
+                                <div class="form-group name1 col-md-1">&nbsp;</div>
+                                <div class="form-group name1 col-md-12">
+                                    <h6 class="title">Optional inference parameters</h6>
+                                    <br>
+                                    <div class="row">
+                                        <div class="form-group name1 col-md-12">
+                                            <p>Enter negative prompts delimited by new line</p>
+                                            {% if request.session.negative_prompt %}
+                                            <textarea name="negative_prompt" rows="6" class="form-control" placeholder="Enter your negative prompt here.">{{ request.session.negative_prompt }}</textarea>
+                                            {% else %}
+                                                <textarea name="negative_prompt" rows="6" class="form-control" placeholder="Enter your negative prompt here."></textarea>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="form-group name1 col-md-4">
+                                        <p>Style preset</p>
+                                            <select class="form-control" name="style_preset" id="style_preset">
+                                                <option value="photographic">Photographic</option>
+                                                <option value="cinematic">Cinematic</option>
+                                                <option value="enhance">Enhance</option>
+                                                <option value="3d-model">3D</option>
+                                                <option value="digital-art">Digital art</option>
+                                                <option value="line-art">Line art</option>
+                                                <option value="fantasy-art">Fantasy art</option>
+                                                <option value="pixel-art">Pixel art</option>
+                                                <option value="analog-film">Analog</option>
+                                                <option value="anime">Anime</option>
+                                                <option value="low-poly">Low poly</option>
+                                                <option value="tile-texture">Tile</option>
+                                                <option value="isometric">Isometric</option>
+                                                <option value="origami">Origami</option>
+                                                <option value="neon-punk">Neon punk</option>
+                                                <option value="comic-book">Comic book</option>
+                                                <option value="modeling-compound">Modeling compound</option>
+                                            </select>
+                                        </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="form-group name1 col-md-6">
+                                            CFG scale
+                                            <input type="range" class="form-control" name="cfg_scale" id="cfg_scale" min="0" max="30" value="10" step="1"  oninput="this.form.cfg_scale_number.value=this.value" />
+                                            <input type="text" inputmode="numeric" style="border:none" class="form-control" name="cfg_scale_number" min="0" max="30" value="10" readonly oninput="this.form.cfg_scale.value=this.value" /><br>
+                                        </div>
+                                        <div class="form-group name1 col-md-6">
+                                            Generation steps
+                                            <input type="range" class="form-control" name="steps" id="steps" min="10" max="150" value="30" step="1" oninput="this.form.steps_number.value=this.value" />
+                                            <input type="text" inputmode="numeric" style="border:none" class="form-control" name="steps_number" min="10" max="150" value="30" readonly oninput="this.form.steps.value=this.value" /><br>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="form-group name1 col-md-6">
+                                            Start schedule
+                                            <input type="range" class="form-control" name="start_schedule" id="start_schedule" min="0" max="1" value="0.5" step=0.1 oninput="this.form.start_schedule_number.value=this.value" />
+                                            <input type="text" inputmode="numeric" style="border:none" class="form-control" name="start_schedule_number" min="0" max="1" value="0.5" readonly oninput="this.form.start_schedule.value=this.value" /><br>
+                                        </div>
+                                        <div class="form-group name1 col-md-6">
+                                            Seed
+                                            <input type="range" class="form-control" name="seed" id="seed" min="0" max="4294967295" value="0" oninput="this.form.seed_number.value=this.value" />
+                                            <input type="text" inputmode="numeric" style="border:none" class="form-control" name="seed_number" min="0" max="4294967295" value="0" readonly oninput="this.form.seed.value=this.value" /><br>
+                                        </div>
+                                    </div> 
+                                    <div class="row">
+                                        <div class="form-group name1 col-md-6">
+                                            Image strength
+                                            <input type="range" class="form-control" name="image_strength" id="image_strength" min="0" max="1" value="0.5" step="0.1" oninput="this.form.image_strength_number.value=this.value" />
+                                            <input type="text" inputmode="numeric" style="border:none" class="form-control" name="image_strength_number" min="0" max="1" value="0.5" readonly oninput="this.form.image_strength.value=this.value" /><br>
+                                        </div>
+                                        <div class="form-group name1 col-md-6">
+                                            Denoising strength
+                                            <input type="range" class="form-control" name="denoising_strength" id="denoising_strength" min="0" max="1" value="0.5" step="0.1" oninput="this.form.denoising_strength_number.value=this.value" />
+                                            <input type="text" inputmode="numeric" style="border:none" class="form-control" name="denoising_strength_number" min="0" max="1" value="0.5" readonly oninput="this.form.denoising_strength.value=this.value" /><br>
+                                        </div>
+                                    </div>   
+                                </div>
+                                <button type="submit" class="btn btn-primary" name="idea"> <span class="text">Create design idea</span> <i class="fa fa-file-text-o"></i> </button><br>
+                                {% if request.session.image_flag %}
+                                    <br><br>
+                                    {% if request.session.image_flag %}
+                                        <h6 class="title">Previously generated image </h6>
+                                        <br>
+                                        <img src={{ request.session.image_url }} alt="pic" /><br>
+                                    {% endif %}
+                                    <div>
+                                        <br><br>
+                                        <div class="row">
+                                            <div class="col">
+                                                <a href="{{ single_product.get_url }}" class="btn btn-primary">View all generated images <i class="fa fa-chevron-circle-left"></i></a>
+                                            </div>
+                                            <div class="col">
+                                                <button type="submit" class="btn btn-outline-primary" name="delete_previous"> <span class="text">Delete previous</span> <i class="fa fa-trash"></i> </button><br>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                        </div>
+				</form>
+
+		</main> <!-- col.// -->
+	</div> <!-- row.// -->
+</div> <!-- card.// -->
+<!-- ============================ COMPONENT 1 END .// ================================= -->
+
+<br>
+
+
+</div> <!-- container .//  -->
+</section>
+<!-- ========================= SECTION CONTENT END// ========================= -->
+
+{% endblock %}

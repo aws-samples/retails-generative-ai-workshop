@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<section class="section-content padding-y bg">
+<div class="container">
+    <div class="card">
+            <main class="col-md-20 border-left">
+            <article class="content-body">
+                <br><br>
+
+                <header class="border-bottom mb-4 pb-3">
+                    <div class="form-inline">
+                        <span class="mr-md-auto"><b>{{ product_count }}</b> items found from vector search for <b><i>{{ keyword }}</i></b></span>
+            
+                    </div>
+                </header><!-- sect-heading -->
+                
+                {% for i in combined %}
+                <h4>Product ID: {{ i.product_item_id }}</h4>
+                <br>
+                <p>{{ i.desc }}</p>
+                <br>
+                <center><img src="{{ i.uri }}" alt="Vector Image"></center>
+                <br><br> 
+                {% endfor %}
+                
+            </article>
+            </main>
+    </div>
+</div> <!-- container .//  -->
+</section>
+<!-- ========================= SECTION CONTENT END// ========================= -->
+
+{% endblock %}
