@@ -29,13 +29,13 @@ import psycopg2
 from pgvector.psycopg2 import register_vector
 
 # Initialize Bedrock client 
-boto3_bedrock = bedrock.get_bedrock_client(assumed_role=os.environ.get("BEDROCK_ASSUME_ROLE", None), region=os.environ.get("AWS_DEFAULT_REGION", None))
+boto3_bedrock = bedrock.get_bedrock_client(assumed_role=os.environ.get("BEDROCK_ASSUME_ROLE", None), region=config("AWS_DEFAULT_REGION"))
 
 # Initialize S3 client
-s3 = boto3.client('s3')
+s3 = boto3.client('s3', region_name=config("AWS_DEFAULT_REGION"))
 
 # Initialize secrets manager
-secrets = boto3.client('secretsmanager')
+secrets = boto3.client('secretsmanager', region_name=config("AWS_DEFAULT_REGION"))
 
 # Create your views here.
 
@@ -202,8 +202,8 @@ def save_product_description(request, product_id):
         else:
             # do nothing
             pass
-    except:
-        pass
+    except Exception as e:
+        raise e
 
 #### HANDLER FUNCTIONS FOR DRAFTING RESPONSE TO CUSTOMER REVIEW FEATURE ####
 
@@ -250,8 +250,8 @@ def save_review_response(request, product_id, review_id):
         else:
             # do nothing
             pass
-    except:
-        pass
+    except Exception as e:
+        raise e
 
 #### HANDLER FUNCTIONS FOR SUMMARIZING CUSTOMER REVIEWS FEATURE ####
 
@@ -296,8 +296,8 @@ def save_summary(request, product_id):
         else:
             # do nothing
             pass
-    except:
-        pass
+    except Exception as e:
+        raise e
 
 #### HANDLER FUNCTIONS FOR CREATING NEW DESIGN IDEAS FEATURE ####
 
@@ -345,6 +345,8 @@ def extract_strings_recursive(test_str, tag):
     res += extract_strings_recursive(test_str[end_idx+len(tag)+3:], tag)
  
     return res
+
+####################### END SECTION - HANDLER FUNCTIONS GENAI FEATURES ##########################
 
 ####################### END SECTION - HANDLER FUNCTIONS GENAI FEATURES ##########################
 

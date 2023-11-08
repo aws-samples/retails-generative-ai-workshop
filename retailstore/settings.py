@@ -97,9 +97,9 @@ AUTH_USER_MODEL = 'accounts.Account'
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
 # Initialize secrets manager
-secrets = boto3.client('secretsmanager')
+secrets = boto3.client('secretsmanager', region_name=config("AWS_DEFAULT_REGION"))
 response = secrets.get_secret_value(
-    SecretId='postgresdb-secrets'
+    SecretId=config('AWS_DATABASE_SECRET_ID')
 )
 database_secrets = json.loads(response['SecretString'])
 
@@ -157,31 +157,18 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
-AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
-AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
-AWS_S3_OBJECT_PARAMETERS = {
-    'CacheControl': 'max-age=86400',
-}
-AWS_S3_FILE_OVERWRITE = False
-AWS_DEFAULT_ACL = 'public-read'
+AWS_CLOUDFRONT_DOMAIN = config('AWS_CLOUDFRONT_DOMAIN')
 AWS_LOCATION = 'static'
 
-STATIC_URL = 'https://%s/%s/' % (AWS_S3_CUSTOM_DOMAIN, AWS_LOCATION)
-STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+STATIC_URL = 'https://%s/%s/' % (AWS_CLOUDFRONT_DOMAIN, AWS_LOCATION)
+STATICFILES_STORAGE = 'retailstore.storage_backends.StaticStorage'
 
-DEFAULT_FILE_STORAGE = 'retailstore.media_store.MediaStorage'
+DEFAULT_FILE_STORAGE = 'retailstore.storage_backends.PublicMediaStorage'
 
 from django.contrib.messages import constants as messages
 
 MESSAGE_TAGS = {
     messages.ERROR: "danger",
 }
-
-# SMTP configuration
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_HOST_USER = 'xxxx@gmail.com'
-EMAIL_HOST_PASSWORD = 'yyyy'
-EMAIL_USE_TLS = True
 
 DEFAULT_AUTO_FIELD='django.db.models.AutoField'

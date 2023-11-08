@@ -30,36 +30,7 @@
             </div>
             </div>
         </center>
-        <br>
-        {% for review in reviews %}
-        <article class="box mb-3">
-            <div class="icontext w-100">
-
-                <div class="text">
-                    <span class="date text-muted float-md-right">{{review.updated_at}} </span>
-                    <h6 class="mb-1">{{review.user.full_name}} </h6>
-                    <div class="rating-star">
-                        <span>
-                            <i class="fa fa-star{% if review.rating == 0.5 %}-half-o{% elif review.rating < 1 %}-o {% endif %}" aria-hidden="true"></i>
-                            <i class="fa fa-star{% if review.rating == 1.5 %}-half-o{% elif review.rating < 2 %}-o {% endif %}" aria-hidden="true"></i>
-                            <i class="fa fa-star{% if review.rating == 2.5 %}-half-o{% elif review.rating < 3 %}-o {% endif %}" aria-hidden="true"></i>
-                            <i class="fa fa-star{% if review.rating == 3.5 %}-half-o{% elif review.rating < 4 %}-o {% endif %}" aria-hidden="true"></i>
-                            <i class="fa fa-star{% if review.rating == 4.5 %}-half-o{% elif review.rating < 5 %}-o {% endif %}" aria-hidden="true"></i>
-                        </span>
-                    </div>
-                </div>
-            </div> <!-- icontext.// -->
-            <div class="mt-3">
-                <h6>{{review.subject}}</h6>
-                <p>
-                    {{review.review}}
-                </p>
-            </div>
-            <br>
-        </article>
-{% endfor %}
-    <br>
-    <form action="{% url 'generate_review_summary' single_product.id %}">
+        <form action="{% url 'generate_review_summary' single_product.id %}">
 
             <div class="container">
                     <div class="form-group name1">&nbsp;</div>
@@ -144,6 +115,34 @@
                             <a href="{{ single_product.get_url }}" class="btn btn-outline-primary">Go back <i class="fa fa-chevron-circle-left"></i></a>
 				</form>
 				{% endif %}
+        <br>
+        {% for review in reviews %}
+        <article class="box mb-3">
+            <div class="icontext w-100">
+
+                <div class="text">
+                    <span class="date text-muted float-md-right">{{review.updated_at}} </span>
+                    <h6 class="mb-1">{{review.user.full_name}} </h6>
+                    <div class="rating-star">
+                        <span>
+                            <i class="fa fa-star{% if review.rating == 0.5 %}-half-o{% elif review.rating < 1 %}-o {% endif %}" aria-hidden="true"></i>
+                            <i class="fa fa-star{% if review.rating == 1.5 %}-half-o{% elif review.rating < 2 %}-o {% endif %}" aria-hidden="true"></i>
+                            <i class="fa fa-star{% if review.rating == 2.5 %}-half-o{% elif review.rating < 3 %}-o {% endif %}" aria-hidden="true"></i>
+                            <i class="fa fa-star{% if review.rating == 3.5 %}-half-o{% elif review.rating < 4 %}-o {% endif %}" aria-hidden="true"></i>
+                            <i class="fa fa-star{% if review.rating == 4.5 %}-half-o{% elif review.rating < 5 %}-o {% endif %}" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                </div>
+            </div> <!-- icontext.// -->
+            <div class="mt-3">
+                <h6>{{review.subject}}</h6>
+                <p>
+                    {{review.review}}
+                </p>
+            </div>
+            <br>
+        </article>
+{% endfor %}
     </div>
 </article>
 
