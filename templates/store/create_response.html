@@ -81,14 +81,14 @@
     {% if request.session.draft_flag %}
                 <br>
                 <div class=container>
-                <p>For your reference, this is the prompt we constructed in our application using the form data above to generate product description from the Bedrock InvokeModel API. This is a non-editable field.</p>
+                <p>For your reference, this is the prompt we constructed in our application using the form data above to generate reponse to customer review from the Bedrock InvokeModel API. This is a non-editable field.</p>
 
                 <textarea name="draft_prompt" rows="4" class="form-control" readonly>{{request.session.draft_prompt}}</textarea>
 				<form action="{% url 'save_review_response' single_product.id review.id %}" method="POST">
                     {% include 'includes/alerts.html' %}
 					{% csrf_token %}
 					    <br><br>
-						<h4 class="title">Generated description</h4><br>
+						<h4 class="title">Generated response</h4><br>
                         <p>Review and make any necessary changes. Once you're done, save response or regenerate a new response.</p>				
 							<textarea rows="6" class="form-control" name="generated_response">{{ request.session.generated_response }}</textarea>
 							<br>

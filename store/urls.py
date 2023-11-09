@@ -16,5 +16,10 @@ urlpatterns = [
     path('save_summary/<int:product_id>/', views.save_summary, name='save_summary'),
     
     #### REGISTER GENAI URLS BELOW ####
-
+    path('generate_product_description/<int:product_id>/', views.generate_product_description, name='generate_product_description'),
+    path('create_review_response/<int:product_id>/<int:review_id>/', views.create_review_response, name='create_review_response'),
+    path('create_design_ideas/<int:product_id>', views.create_design_ideas, name='create_design_ideas'),
+    path('generate_review_summary/<int:product_id>/', views.generate_review_summary, name='generate_review_summary'),
+    path('ask_question/', views.ask_question, name='ask_question'),
+    path('vector_search/', views.vector_search, name='vector_search'),
 ]
