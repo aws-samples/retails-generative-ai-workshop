@@ -348,7 +348,6 @@ def extract_strings_recursive(test_str, tag):
 
 ####################### END SECTION - HANDLER FUNCTIONS GENAI FEATURES ##########################
 
-####################### END SECTION - HANDLER FUNCTIONS GENAI FEATURES ##########################
 
 ####################### START SECTION - IMPLEMENT GENAI FEATURES FOR WORKSHOP ##########################
 
