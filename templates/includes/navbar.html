@@ -30,10 +30,11 @@
                 <img class="logo" src="{% static './images/reinvent-black.png' %}">
             </a> <!-- brand-wrap.// -->
         </div>
+        &nbsp;&nbsp;&nbsp;&nbsp;
         <div class="col-lg col-sm col-md col-6 flex-grow-0">
             <div class="category-wrap dropdown d-inline-block float-right">
                 <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown"> 
-                    <i class="fa fa-bars"></i> Categories 
+                    <i class="fa fa-bars"></i> &nbsp; Shop
                 </button>
                 <div class="dropdown-menu">
                     <a class="dropdown-item" href="{% url 'store'%}">All Products</a>
@@ -43,7 +44,7 @@
                 </div>
             </div>  <!-- category-wrap.// -->
         </div> <!-- col.// -->
-        <a href="{% url 'store' %}" class="btn btn-outline-primary">Store</a>
+        <!--a href="{% url 'store' %}" class="btn btn-outline-primary">Store</a-->
         <div class="col-lg  col-md-6 col-sm-12 col">
 
         <!-- FEATURE 6 BUTTON START -->
@@ -56,7 +57,7 @@
                     <div class="d-flex justify-content-end mb-3 mb-lg-0">
                         {% if user.id is None %}
                         <div class="widget-header">
-                            <small class="title text-muted">Welcome guest!</small>
+                            <small class="title text-muted">Welcome Guest!</small>
                             <div> 
                                 <a href="{% url 'login' %}">Log in</a> <span class="dark-transp"> | </span>
                                 <a href="{% url 'register' %}"> Sign up</a>
