@@ -9,13 +9,11 @@
         <ul class="navbar-nav mr-auto">
 
         <!-- FEATURE 5 BUTTON START -->
-
-		{% if request.user.role == "Customer" %}
-            <li><a href="{% url 'ask_question' %}" class="nav-link"> <i class="fa fa-question"></i> Ask a question </a></li>
-		{% endif %}
-
+        {% if request.user.role == "Customer" %}
+             <li><a href="{% url 'ask_question' %}" class="nav-link"> <i class="fa fa-question"></i> Ask a question </a></li>
+        {% endif %}
         <!-- FEATURE 5 BUTTON END -->
-        
+
         </ul>
         <ul class="navbar-nav">
             <!--li><a href="#" class="nav-link"> <i class="fa fa-question"></i> Ask a question </a></li>
@@ -33,10 +31,11 @@
                 <img class="logo" src="{% static './images/reinvent-black.png' %}">
             </a> <!-- brand-wrap.// -->
         </div>
+        &nbsp;&nbsp;&nbsp;&nbsp;
         <div class="col-lg col-sm col-md col-6 flex-grow-0">
             <div class="category-wrap dropdown d-inline-block float-right">
                 <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown"> 
-                    <i class="fa fa-bars"></i> Categories 
+                    <i class="fa fa-bars"></i> &nbsp; Shop
                 </button>
                 <div class="dropdown-menu">
                     <a class="dropdown-item" href="{% url 'store'%}">All Products</a>
@@ -46,12 +45,12 @@
                 </div>
             </div>  <!-- category-wrap.// -->
         </div> <!-- col.// -->
-        <a href="{% url 'store' %}" class="btn btn-outline-primary">Store</a>
+        <!--a href="{% url 'store' %}" class="btn btn-outline-primary">Store</a-->
         <div class="col-lg  col-md-6 col-sm-12 col">
 
         <!-- FEATURE 6 BUTTON START -->
-
-		{% if request.user.role == "Customer" %}
+        
+        {% if request.user.role == "Customer" %}
             <form action="{% url 'vector_search' %}" class="search" method="GET">
                 <div class="input-group w-100">
                     <input type="text" class="form-control" style="width:60%;" placeholder="Vector search" name="keyword">
@@ -65,12 +64,13 @@
         {% endif %}
 
         <!-- FEATURE 6 BUTTON END -->
+        
         </div> <!-- col.// -->
         <div class="col-lg-3 col-sm-6 col-8 order-2 order-lg-3">
                     <div class="d-flex justify-content-end mb-3 mb-lg-0">
                         {% if user.id is None %}
                         <div class="widget-header">
-                            <small class="title text-muted">Welcome guest!</small>
+                            <small class="title text-muted">Welcome Guest!</small>
                             <div> 
                                 <a href="{% url 'login' %}">Log in</a> <span class="dark-transp"> | </span>
                                 <a href="{% url 'register' %}"> Sign up</a>
