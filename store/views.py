@@ -715,7 +715,7 @@ def generate_review_summary(request, product_id):
         if 'Claude' in request.GET.get('llm'):
             #Inference parameters for Claude Anthropic
             inference_modifier = {}
-            inference_modifier['max_tokens_to_sample'] = int(request.GET.get('claude_max_tokens_to_sample') or 200)
+            inference_modifier['max_tokens_to_sample'] = int(request.GET.get('claude_max_tokens_to_sample') or 1024)
             inference_modifier['temperature'] = float(request.GET.get('claude_temperature') or 0.5)
             inference_modifier['top_k'] = int(request.GET.get('claude_top_k') or 250)
             inference_modifier['top_p'] = float(request.GET.get('claude_top_p') or 1)
@@ -732,7 +732,7 @@ def generate_review_summary(request, product_id):
         elif 'Titan' in request.GET.get('llm'):
             #Inference parameters for Titan
             inference_modifier = {}
-            inference_modifier['maxTokenCount'] = int(request.GET.get('titan_max_tokens_to_sample') or 200)
+            inference_modifier['maxTokenCount'] = int(request.GET.get('titan_max_tokens_to_sample') or 1024)
             inference_modifier['temperature'] = float(request.GET.get('titan_temperature') or 0.5)
             inference_modifier['topP'] = int(request.GET.get('titan_top_p') or 250)
 
