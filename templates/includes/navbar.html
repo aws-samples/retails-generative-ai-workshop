@@ -9,8 +9,9 @@
         <ul class="navbar-nav mr-auto">
 
         <!-- FEATURE 5 BUTTON START -->
-
-
+        {% if request.user.role == "Customer" %}
+             <li><a href="{% url 'ask_question' %}" class="nav-link"> <i class="fa fa-question"></i> Ask a question </a></li>
+        {% endif %}
         <!-- FEATURE 5 BUTTON END -->
 
         </ul>
@@ -48,7 +49,19 @@
         <div class="col-lg  col-md-6 col-sm-12 col">
 
         <!-- FEATURE 6 BUTTON START -->
-
+        
+        {% if request.user.role == "Customer" %}
+            <form action="{% url 'vector_search' %}" class="search" method="GET">
+                <div class="input-group w-100">
+                    <input type="text" class="form-control" style="width:60%;" placeholder="Vector search" name="keyword">
+                    <div class="input-group-append">
+                      <button class="btn btn-secondary" type="submit">
+                        <i class="fa fa-search"></i>
+                      </button>
+                    </div>
+                </div>
+            </form> <!-- search-wrap .end// -->
+        {% endif %}
 
         <!-- FEATURE 6 BUTTON END -->
         

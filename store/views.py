@@ -163,6 +163,21 @@ def submit_review(request, product_id):
 ## This section can be safely ignored
 ## Please don't modify anything in this section
 
+#### HANDLER FUNCTIONS FOR GENAI VIEWS (PLACEHOLDERS)
+def create_review_response(request, product_id, review_id):
+   return
+
+def create_design_ideas(request, product_id):
+   return
+
+def generate_review_summary(request, product_id):
+   return
+
+def ask_question(request):
+   return
+
+def vector_search(request):
+   return
 #### HANDLER FUNCTIONS FOR GENERATING PRODUCT DESCRIPTION FEATURE ####
 
 # This function is used to just render HTML page for generate product description functionality
