@@ -843,12 +843,13 @@ def ask_question(request):
             Human: Create an Postgres SQL query for a retail website to answer the question keeping the following rules in mind: 
             
             1. Database is implemented in Postgres SQL.
-            2. Follow the Postgres syntax carefully while generating the query. 
+            2. Follow the Postgres syntax carefully while generating the query.
             3. Enclose the query in <query></query>. 
             4. Use "like" and upper() for string comparison on both left hand side and right hand side of the expression. For example, if the query contains "jackets", use "where upper(product_name) like upper('%jacket%')". 
-            5. If the question is generic, like "where is mount everest" or "who went to the moon first", then do not generate any query in <query></query> and do not answer the question in any form. Instead, mention that the answer is not found in context.
-            6. If the question is not related to the schema, then do not generate any query in <query></query> and do not answer the question in any form. Instead, mention that the answer is not found in context.  
-            7. If the question is asked in a language other than English, convert the question into English before constructing the SQL query. The string and varchar fields stored in the database are always in English. 
+	        5. Do not use upper() on integer or non-string or non-varchar table columns!
+            6. If the question is generic, like "where is mount everest" or "who went to the moon first", then do not generate any query in <query></query> and do not answer the question in any form. Instead, mention that the answer is not found in context.
+            7. If the question is not related to the schema, then do not generate any query in <query></query> and do not answer the question in any form. Instead, mention that the answer is not found in context.  
+	        8. If the question is asked in a language other than English, convert the question into English before constructing the SQL query. The string and varchar table columns in the database are always in English.  
 
             <schema>
                 {schema}
