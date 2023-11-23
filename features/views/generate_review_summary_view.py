@@ -864,7 +864,7 @@ def generate_review_summary(request, product_id):
     except Exception as e: 
         raise e
 
-    # STEP 9 - Re-direct to the same page. Now the page will display the generated product summary from Bedrock.
+    # STEP 9 - Re-direct to the same page. Now the page will display the summarized product review from Bedrock.    
     url = request.META.get('HTTP_REFERER')
     return redirect(url)
 
