@@ -402,6 +402,7 @@ def generate_product_description(request, product_id):
         prompt_template = PromptTemplate(
             input_variables=["brand", "colors", "category", "length", "name","details"], 
             template="""
+
                     Human: Create a catchy product description for a {category} from the brand {brand}. 
                     Product name is {name}. 
                     The number of words should be less than {length}. 
@@ -492,6 +493,7 @@ def create_review_response(request, product_id, review_id):
         prompt_template = PromptTemplate(
             input_variables=["product_name","customer_name","manager_name","email","phone","length","review"], 
             template="""
+
                     Human: 
                     
                     I'm the manager of re:Invent retails. 
@@ -692,7 +694,6 @@ def create_design_ideas(request, product_id):
 #### FEATURE 4 - SUMMARIZE CUSTOMER REVIEWS FOR A PRODUCT ####
 
 # This function is used for summarizing customer reviews using LLM from Bedrock
-# This function is used for summarizing customer reviews using LLM from Bedrock
 def generate_review_summary(request, product_id):
     # Get current URL for redirecting
     url = request.META.get('HTTP_REFERER')
@@ -701,7 +702,7 @@ def generate_review_summary(request, product_id):
     # Get all customer reviews for this product
     product_reviews = ReviewRating.objects.filter(product=single_product)
 
-    chunk_size = int(request.GET.get('chunk_size') or 4000)
+    chunk_size = int(request.GET.get('chunk_size') or 1000)
     chunk_overlap = int(request.GET.get('chunk_overlap') or 100)
 
     # Get a list of customer reviews for this product and enclose them in <review></review> tags
@@ -856,10 +857,11 @@ def ask_question(request):
         # We are passing PostgresQL documentation to help with the SQL generation. 
         # Generated query will be embedded in <query></query> tags
         prompt_template = """
+
             Human: Create an Postgres SQL query for a retail website to answer the question keeping the following rules in mind: 
             
             1. Database is implemented in Postgres SQL.
-            2. Postgres syntax details can be found here: https://www.postgresql.org/files/documentation/pdf/15/postgresql-15-US.pdf
+            2. Follow the Postgres syntax carefully while generating the query.
             3. Enclose the query in <query></query>. 
             4. Use "like" and upper() for string comparison on both left hand side and right hand side of the expression. For example, if the query contains "jackets", use "where upper(product_name) like upper('%jacket%')". 
             5. If the question is generic, like "where is mount everest" or "who went to the moon first", then do not generate any query in <query></query> and do not answer the question in any form. Instead, mention that the answer is not found in context.
