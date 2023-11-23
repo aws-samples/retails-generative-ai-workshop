@@ -725,13 +725,17 @@ def create_design_ideas(request, product_id):
 
 
 #### FEATURE 4 - SUMMARIZE CUSTOMER REVIEWS FOR A PRODUCT ####
+#### FEATURE 4 - SUMMARIZE CUSTOMER REVIEWS FOR A PRODUCT ####
 # This function is used for summarizing customer reviews using LLM from Bedrock
 def generate_review_summary(request, product_id):
-    # STEP 1 - The product ID will be passed from the retail website. 
+    #  STEP 1 - The product ID will be passed from the retail website. 
     # Filter out the Product object using that product ID and get all the customer reviews for this product
     single_product = Product.objects.get(id=product_id)
     product_reviews = ReviewRating.objects.filter(product=single_product)
-    
+
+    chunk_size = int(request.POST.get('chunk_size') or 1000)
+    chunk_overlap = int(request.POST.get('chunk_overlap') or 100)
+
     # Enclose all the customer reviews in <review></review> tags
     # this will be used in the prompt template for summarizing customer reviews
     # doing it this way helps LLM understand our instruction better
@@ -742,37 +746,45 @@ def generate_review_summary(request, product_id):
         review_digest += review.review + '\n'
         review_digest += "</review>" + '\n\n'
 
-    try:
+    # STEP 2 - Split the reviews into chunks using LangChain's TextSplitter transformer
+    # Let's split our reviews into chunks using Langchain's RecursiveCharacterTextSplitter
+    # chunk size and overlap are defined as input parameters
+    from langchain.text_splitter import RecursiveCharacterTextSplitter
+    text_splitter = RecursiveCharacterTextSplitter(
+        separators=["\n\n", "\n"], chunk_size=chunk_size, chunk_overlap=chunk_overlap
+    )
+    customer_reviews = text_splitter.create_documents([review_digest])
 
-        # STEP 2 - Get the inference parameter for the LLM from the retail website 
+    try:
+        # STEP 3 - Get the inference parameter for the LLM from the retail website 
         # If user chose Claude
-        if 'Claude' in request.GET.get('llm'):
+        if 'Claude' in request.POST.get('llm'):
             #Inference parameters for Claude Anthropic
             inference_modifier = {}
-            inference_modifier['max_tokens_to_sample'] = int(request.GET.get('claude_max_tokens_to_sample') or 1024)
-            inference_modifier['temperature'] = float(request.GET.get('claude_temperature') or 0.5)
-            inference_modifier['top_k'] = int(request.GET.get('claude_top_k') or 250)
-            inference_modifier['top_p'] = float(request.GET.get('claude_top_p') or 1)
+            inference_modifier['max_tokens_to_sample'] = int(request.POST.get('claude_max_tokens_to_sample') or 1024)
+            inference_modifier['temperature'] = float(request.POST.get('claude_temperature') or 0.5)
+            inference_modifier['top_k'] = int(request.POST.get('claude_top_k') or 250)
+            inference_modifier['top_p'] = float(request.POST.get('claude_top_p') or 1)
             inference_modifier['stop_sequences'] = ["\n\nHuman"]
 
             # Initialize Claude LLM
-            textgen_llm = Bedrock(
+            textsumm_llm = Bedrock(
                 model_id="anthropic.claude-instant-v1",
                 client=boto3_bedrock,
                 model_kwargs=inference_modifier,
             )
         
          # If user chose Titan
-        elif 'Titan' in request.GET.get('llm'):
+        elif 'Titan' in request.POST.get('llm'):
             #Inference parameters for Titan
             inference_modifier = {}
-            inference_modifier['maxTokenCount'] = int(request.GET.get('titan_max_tokens_to_sample') or 200)
-            inference_modifier['temperature'] = float(request.GET.get('titan_temperature') or 0.5)
-            inference_modifier['topP'] = int(request.GET.get('titan_top_p') or 250)
+            inference_modifier['maxTokenCount'] = int(request.POST.get('titan_max_tokens_to_sample') or 1024)
+            inference_modifier['temperature'] = float(request.POST.get('titan_temperature') or 0.5)
+            inference_modifier['topP'] = int(request.POST.get('titan_top_p') or 250)
 
             # Initialize Titan LLM
-            textgen_llm = Bedrock(
-                model_id="amazon.titan-tg1-large",
+            textsumm_llm = Bedrock(
+                model_id="amazon.titan-text-express-v1",
                 client=boto3_bedrock,
                 model_kwargs=inference_modifier,
                 )
@@ -780,42 +792,83 @@ def generate_review_summary(request, product_id):
         else:
             pass
 
-        # STEP 3 - Create prompt for summarizing customer reviews. 
-        prompt_template = PromptTemplate(
-            input_variables=["product_name","reviews"],
-            template="""
+        # STEP 4 - Create prompt for summarizing customer reviews. 
+        # Passing product name and all the customer reviews as parameters to the prompt template. 
+        summary_prompt='''
 
-                Human: Provide a review summary including pros and cons based on the customer reviews for the product {product_name}. This summary will be updated in the product webpage. Customer reviews are enclosed in <customer_reviews> tag. 
-        
-                <customer_reviews>
-                    {reviews}
-                <customer_reviews>
+            Human: 
+
+            Your task is to summarize the customer reviews for the product {product_name}. 
+            Following are the customer reviews enclosed in <customer_reviews> tag. 
+            
+            <customer_reviews>
+                `{text}`
+            </customer_reviews>
+            
+            <example_review_summary_format>
+
+            Here's a customer review summary of {product_name}
+            Pros:
                 
-                Assistant:
+                - pro 1
+                - pro 2 
+                
+            Cons:
+            
+                - con 1 
+                - con 2
+            
+            Overall summary of the customer reviews. 
 
-                """
-            )
+            </example_review_summary_format>
+
+            Do not suggest the customer to make a purchasing decision. 
+            Overall summary should be objective and should only echo the customer reviews.
+            
+            
+            Assistant:
+            
+        '''
         
-        # STEP 4 - Pass product name and all the customer reviews as parameters to the prompt template. 
-        prompt = prompt_template.format(product_name=single_product.product_name,
-                                         reviews=review_digest)
+        # STEP 5 - Create prompt template with two input variables: 
+        # product name and text i.e, customer reviews for this product
+        summary_prompt_template = PromptTemplate(
+            template=summary_prompt, 
+            input_variables=['product_name','text']
+        )
 
-        # STEP 5 - Call the LLM from Bedrock and retrieve the generated summary for all the customer reviews for this product.
-        response = textgen_llm(prompt)
+        summary_prompt_string = summary_prompt_template.format(product_name=single_product.product_name, text=customer_reviews)
 
-        # STEP 6 - Set Django session variables which will be used in the HTML template to display the summary.
-        request.session['generated_summary'] = response
-        request.session['summary_prompt'] = prompt
+        # STEP 6 - Invoke Langchain's load_summarize_chain to summarize the product reviews
+        # Chain type "stuff" takes the list of customer reviews, inserts them all into a prompt and passes that prompt to an LLM.
+        from langchain.chains.summarize import load_summarize_chain
+
+        summary_chain = load_summarize_chain (
+            llm=textsumm_llm,
+            chain_type='stuff',
+            prompt=summary_prompt_template,
+            verbose=False
+        )
+
+        # STEP 7 - Pass in the input variables to the prompt template and invoke the summary chain using Bedrock LLM 
+        summary=summary_chain.run({
+                "product_name": single_product.product_name,
+                "input_documents": customer_reviews
+                })
+
+        # STEP 8 - Set session parameters to use in HTML template
+        request.session['generated_summary'] = summary
+        request.session['summary_prompt'] = summary_prompt_string
         request.session['summary_flag'] = True
         request.session.modified = True
 
     except Exception as e: 
         raise e
 
-   # STEP 7 - Re-direct to the same page. 
-   # Now the page will display the generated summary of customer reviews from Bedrock.
+    # STEP 9 - Re-direct to the same page. Now the page will display the summarized product review from Bedrock.    
     url = request.META.get('HTTP_REFERER')
     return redirect(url)
+
 
 
 #### FEATURE 5 - QUESTION ANSWERING WITH SQL GENERATION ####
@@ -843,12 +896,13 @@ def ask_question(request):
             Human: Create an Postgres SQL query for a retail website to answer the question keeping the following rules in mind: 
             
             1. Database is implemented in Postgres SQL.
-            2. Follow the Postgres syntax carefully while generating the query. 
+            2. Follow the Postgres syntax carefully while generating the query.
             3. Enclose the query in <query></query>. 
             4. Use "like" and upper() for string comparison on both left hand side and right hand side of the expression. For example, if the query contains "jackets", use "where upper(product_name) like upper('%jacket%')". 
-            5. If the question is generic, like "where is mount everest" or "who went to the moon first", then do not generate any query in <query></query> and do not answer the question in any form. Instead, mention that the answer is not found in context.
-            6. If the question is not related to the schema, then do not generate any query in <query></query> and do not answer the question in any form. Instead, mention that the answer is not found in context.  
-            7. If the question is asked in a language other than English, convert the question into English before constructing the SQL query. The string and varchar fields stored in the database are always in English. 
+	        5. Do not use upper() on integer or non-string or non-varchar table columns!
+            6. If the question is generic, like "where is mount everest" or "who went to the moon first", then do not generate any query in <query></query> and do not answer the question in any form. Instead, mention that the answer is not found in context.
+            7. If the question is not related to the schema, then do not generate any query in <query></query> and do not answer the question in any form. Instead, mention that the answer is not found in context.
+            8. If the question is asked in a language other than English, convert the question into English before constructing the SQL query. The string and varchar table columns in the database are always in English.  
 
             <schema>
                 {schema}
@@ -972,7 +1026,6 @@ def ask_question(request):
     return render(request, 'store/question.html', context)
 
 
-
 #### FEATURE 6 - VECTOR SEARCH ####
 # This function is used for searching similar products using vector embeddings
 def vector_search(request):
@@ -1054,4 +1107,3 @@ def vector_search(request):
 
 
 ####################### END SECTION - IMPLEMENT GENAI FEATURES FOR WORKSHOP ##########################
-
