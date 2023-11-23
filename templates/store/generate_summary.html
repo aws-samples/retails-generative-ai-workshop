@@ -2,7 +2,6 @@
 {% load static %}
 
 {% block content %}
-{% include 'includes/alerts.html' %}
 
 <section class="section-content padding-y bg">
 <div class="container">
@@ -31,8 +30,8 @@
             </div>
             </div>
         </center>
-        <form action="{% url 'generate_review_summary' single_product.id %}">
-
+        <form action="{% url 'generate_review_summary' single_product.id %}" method="POST">
+            {% csrf_token %}
             <div class="container">
                     <div class="form-group name1">&nbsp;</div>
                     <h5>Summarize product reviews</h5>
@@ -91,6 +90,18 @@
                                 Top P
                                 <input type="range" class="form-control" name="titan_top_p" id="top_p" min="0" max="1" value="1" step="0.1" oninput="this.form.titan_top_p_number.value=this.value" />
                                 <input type="text" inputmode="numeric" style="border:none" class="form-control" name="titan_top_p_number" min="0" max="1" value="1" readonly oninput="this.form.titan_top_p.value=this.value" /><br>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="form-group name1 col-md-6">
+                            Chunk Size
+                            <input type="range" class="form-control" name="chunk_size" id="chunk_size" min="500" max="4000" value="1000" oninput="this.form.chunk_size_number.value=this.value" />
+                            <input type="text" inputmode="numeric" style="border:none" class="form-control" name="chunk_size_number" min="500" max="4000" value="1000" readonly oninput="this.form.chunk_size.value=this.value" /><br>
+                        </div>
+                        <div class="form-group name1 col-md-6">
+                            Chunk Overlap
+                            <input type="range" class="form-control" name="chunk_overlap" id="chunk_overlap" min="50" max="499" value="100" oninput="this.form.chunk_overlap_number.value=this.value" />
+                            <input type="text" inputmode="numeric" style="border:none" class="form-control" name="chunk_overlap_number" min="50" max="499" value="100" readonly oninput="this.form.chunk_overlap.value=this.value" /><br>
                         </div>
                     </div>
                     <button type="submit" class="btn btn-primary"> <span class="text">Draft review summary</span> <i class="fa fa-list"></i> </button><br>
