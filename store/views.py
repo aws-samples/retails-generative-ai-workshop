@@ -702,8 +702,8 @@ def generate_review_summary(request, product_id):
     # Get all customer reviews for this product
     product_reviews = ReviewRating.objects.filter(product=single_product)
 
-    chunk_size = int(request.GET.get('chunk_size') or 1000)
-    chunk_overlap = int(request.GET.get('chunk_overlap') or 100)
+    chunk_size = int(request.POST.get('chunk_size') or 1000)
+    chunk_overlap = int(request.POST.get('chunk_overlap') or 100)
 
     # Get a list of customer reviews for this product and enclose them in <review></review> tags
     # This will be used in the prompt template for summarizing customer reviews
@@ -725,13 +725,13 @@ def generate_review_summary(request, product_id):
 
     try:
         # If user chose Claude
-        if 'Claude' in request.GET.get('llm'):
+        if 'Claude' in request.POST.get('llm'):
             #Inference parameters for Claude Anthropic
             inference_modifier = {}
-            inference_modifier['max_tokens_to_sample'] = int(request.GET.get('claude_max_tokens_to_sample') or 1024)
-            inference_modifier['temperature'] = float(request.GET.get('claude_temperature') or 0.5)
-            inference_modifier['top_k'] = int(request.GET.get('claude_top_k') or 250)
-            inference_modifier['top_p'] = float(request.GET.get('claude_top_p') or 1)
+            inference_modifier['max_tokens_to_sample'] = int(request.POST.get('claude_max_tokens_to_sample') or 1024)
+            inference_modifier['temperature'] = float(request.POST.get('claude_temperature') or 0.5)
+            inference_modifier['top_k'] = int(request.POST.get('claude_top_k') or 250)
+            inference_modifier['top_p'] = float(request.POST.get('claude_top_p') or 1)
             inference_modifier['stop_sequences'] = ["\n\nHuman"]
 
             # Initialize Claude LLM
@@ -742,12 +742,12 @@ def generate_review_summary(request, product_id):
             )
         
          # If user chose Titan
-        elif 'Titan' in request.GET.get('llm'):
+        elif 'Titan' in request.POST.get('llm'):
             #Inference parameters for Titan
             inference_modifier = {}
-            inference_modifier['maxTokenCount'] = int(request.GET.get('titan_max_tokens_to_sample') or 1024)
-            inference_modifier['temperature'] = float(request.GET.get('titan_temperature') or 0.5)
-            inference_modifier['topP'] = int(request.GET.get('titan_top_p') or 250)
+            inference_modifier['maxTokenCount'] = int(request.POST.get('titan_max_tokens_to_sample') or 1024)
+            inference_modifier['temperature'] = float(request.POST.get('titan_temperature') or 0.5)
+            inference_modifier['topP'] = int(request.POST.get('titan_top_p') or 250)
 
             # Initialize Titan LLM
             textsumm_llm = Bedrock(

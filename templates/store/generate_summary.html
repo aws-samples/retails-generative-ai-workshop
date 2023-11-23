@@ -30,8 +30,8 @@
             </div>
             </div>
         </center>
-        <form action="{% url 'generate_review_summary' single_product.id %}">
-
+        <form action="{% url 'generate_review_summary' single_product.id %}" method="POST">
+            {% csrf_token %}
             <div class="container">
                     <div class="form-group name1">&nbsp;</div>
                     <h5>Summarize product reviews</h5>
