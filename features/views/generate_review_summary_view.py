@@ -167,22 +167,27 @@ def submit_review(request, product_id):
 #### HANDLER FUNCTIONS FOR GENAI VIEWS (PLACEHOLDERS)
 def create_review_response(request, product_id, review_id):
    url = request.META.get('HTTP_REFERER')
+   messages.error(request, "This feature has not been implemented yet")
    return redirect(url)
 
 def create_design_ideas(request, product_id):
    url = request.META.get('HTTP_REFERER')
+   messages.error(request, "This feature has not been implemented yet")
    return redirect(url)
 
 def generate_review_summary(request, product_id):
    url = request.META.get('HTTP_REFERER')
+   messages.error(request, "This feature has not been implemented yet")
    return redirect(url)
 
 def ask_question(request):
    url = request.META.get('HTTP_REFERER')
+   messages.error(request, "This feature has not been implemented yet")
    return redirect(url)
 
 def vector_search(request):
    url = request.META.get('HTTP_REFERER')
+   messages.error(request, "This feature has not been implemented yet")
    return redirect(url)
 
 #### HANDLER FUNCTIONS FOR GENERATING PRODUCT DESCRIPTION FEATURE ####
