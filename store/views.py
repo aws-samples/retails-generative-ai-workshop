@@ -354,45 +354,46 @@ def extract_strings_recursive(test_str, tag):
 #### Please don't edit any other sections in THIS file. 
 
 #### FEATURE 1 - GENERATE PRODUCT DESCRIPTION ####
-
 # This function is used for generating product description using LLM from Bedrock
 def generate_product_description(request, product_id):
     
-    # get current URL for redirecting
-    url = request.META.get('HTTP_REFERER')
-    # get product from product ID
+    # STEP 1 - The product ID will be passed from the retail website. 
+    # Filter out the Product object from this product ID and get the product name, brand, and colors available from the Product object. 
+    # All these values will be passed to the LLM prompt template as input variables.
     single_product = Product.objects.get(id=product_id)
     product_colors = []
-    # get product colors
     product_vars = Variation.objects.filter(product=single_product, variation_category="color")
     for variation in product_vars:
         product_colors.append(variation.variation_value)
+
+    product_brand = single_product.product_brand
+    product_category = single_product.category
+    product_name = single_product.product_name
+
+    # STEP 2 - Get the product details and maximum number of words for the product description from the user input form in the web application. This will be passed as variables to the LLM prompt template. 
+    product_details = request.GET.get('product_details')
+    max_length = request.GET.get('wordrange')
+
+    # STEP 3 - Get the inference parameters for Anthropic Claude model from the website. 
+    inference_modifier = {}
+    inference_modifier['max_tokens_to_sample'] = int(request.GET.get('max_tokens_to_sample') or 200)
+    inference_modifier['temperature'] = float(request.GET.get('temperature') or 0.5)
+    inference_modifier['top_k'] = int(request.GET.get('top_k') or 250)
+    inference_modifier['top_p'] = float(request.GET.get('top_p') or 1)
+    inference_modifier['stop_sequences'] = ["\n\nHuman"]
+
     try:
-        # get product name, brand, category, color
-        # get product details from user input from the web application form
-        # these data will be used to construct the prompt which will be passed to the LLM to generate product description. 
-        product_brand = single_product.product_brand
-        product_category = single_product.category
-        product_name = single_product.product_name
-        product_details = request.GET.get('product_details')
-        max_length = request.GET.get('wordrange')
 
-        # get inference parameters from form for Claude Anthropic
-        inference_modifier = {}
-        inference_modifier['max_tokens_to_sample'] = int(request.GET.get('max_tokens_to_sample') or 200)
-        inference_modifier['temperature'] = float(request.GET.get('temperature') or 0.5)
-        inference_modifier['top_k'] = int(request.GET.get('top_k') or 250)
-        inference_modifier['top_p'] = float(request.GET.get('top_p') or 1)
-        inference_modifier['stop_sequences'] = ["\n\nHuman"]
-
-        # Initialize LLM
+        # STEP 4 - Initialize Anthropic Claude LLM from Bedrock. 
         textgen_llm = Bedrock(
             model_id="anthropic.claude-instant-v1",
             client=boto3_bedrock,
             model_kwargs=inference_modifier,
         )
         
-        # Create a prompt template that has 6 input variables: 
+        # STEP 5 - Create a prompt template with all the input variables from STEP 2 and 3. 
+        # This prompt template asks Bedrock to create a catchy product description based on the input variables we pass. 
+        # These are the 6 input variables: 
         # product name
         # product brand
         # product color
@@ -402,7 +403,6 @@ def generate_product_description(request, product_id):
         prompt_template = PromptTemplate(
             input_variables=["brand", "colors", "category", "length", "name","details"], 
             template="""
-
                     Human: Create a catchy product description for a {category} from the brand {brand}. 
                     Product name is {name}. 
                     The number of words should be less than {length}. 
@@ -428,7 +428,7 @@ def generate_product_description(request, product_id):
                     """
                 )
 
-        # pass in the variables to the prompt template
+        # STEP 6 - Initialize prompt template with all the prompt input variables. 
         prompt = prompt_template.format(brand=product_brand, 
                                          colors=product_colors,
                                          category=product_category,
@@ -436,45 +436,51 @@ def generate_product_description(request, product_id):
                                          name=product_name,
                                          details=product_details)
         
-        # generate product description from Bedrock with the constructed prompt
+        # STEP 7 - Retrieve the generated product description from Bedrock.
         response = textgen_llm(prompt)
-
         # get the second paragraph i.e, only the product description 
         generated_description = response[response.index('\n')+1:]
 
     except Exception as e:
         raise e
     
-    # set session parameters to use in HTML template 
+    # STEP 8 - Set Django session variables which will be used in the HTML template to display the results. 
     request.session['product_details'] = product_details
     request.session['generated_description'] = generated_description
     request.session['prompt'] = prompt
     request.session['product_description_flag'] = True
     request.session.modified = True
 
-    # redirect to the previous URL (i.e., generate_description.html). 
+    # STEP 9 - Re-direct to the same page. 
+    # Now the page will display the generated product description from Bedrock. 
     # From there, user can either save description or regenerate it. 
+
+    url = request.META.get('HTTP_REFERER')
     return redirect(url)
 
-#### FEATURE 2 - DRAFTING RESPONSE TO CUSTOMER REVIEWS ####
 
+#### FEATURE 2 - DRAFTING RESPONSE TO CUSTOMER REVIEWS ####
 # This function is used for drafting response to customer reviews using LLM from Bedrock
 def create_review_response(request, product_id, review_id):
-    # get current URL for redirecting
-    url = request.META.get('HTTP_REFERER')
-    # get product from product ID
+
+
+    # STEP 1 - The product ID and customer review ID will be passed from the retail website. 
+    # Filter out the Product object using that product ID and Review object from the review ID. 
+    # Get the product name, review text from the objects. 
+    # All these values will be passed to the LLM prompt template as input variables.
+
     product = Product.objects.get(id=product_id)
-    # get single customer review using product ID, review ID
     review = ReviewRating.objects.get(product=product, id=review_id)
+
+    product_name = product.product_name
+    review_text = review.review
+
     try:
-        # Get product name, customer review 
-        # and number of words to generate as a response to customer review
-        # these data will be used to construct the prompt which will be passed to the LLM to create response to customer review. 
-        product_name = product.product_name
-        review_text = review.review
+
+        # STEP 2 - Get the maximum number of words to create response for the customer review. This will be passed as a variable to the LLM prompt template.
         max_length = request.GET.get('wordrange')
 
-        #Inference parameters for Claude Anthropic
+        # STEP 3 - Get the inference parameters for Anthropic Claude model from the retail website .
         inference_modifier = {}
         inference_modifier['max_tokens_to_sample'] = int(request.GET.get('max_tokens_to_sample') or 200)
         inference_modifier['temperature'] = float(request.GET.get('temperature') or 0.5)
@@ -482,18 +488,21 @@ def create_review_response(request, product_id, review_id):
         inference_modifier['top_p'] = float(request.GET.get('top_p') or 1)
         inference_modifier['stop_sequences'] = ["\n\nHuman"]
 
-        # Initialize LLM
+        # STEP 4 - Initialize Anthropic Claude LLM from Bedrock.
         textgen_llm = Bedrock(
             model_id="anthropic.claude-instant-v1",
             client=boto3_bedrock,
             model_kwargs=inference_modifier,
         )
         
-        # Create a prompt template that has 4 input variables for product brand, color, category and description
+        # STEP 5 - Create a prompt template with all the input variables from STEP 2 and 3. 
+        # This prompt template asks Bedrock to create a response to customer review based on their sentiments. 
+        # If the sentiment is negative, the manager will provide their phone number, requesting the customer to reach out directly.
+
+        # This prompt template needs 7 input variables: product name, customer name, manager's name, manager's email, manager's phone number, response length, customer review text.
         prompt_template = PromptTemplate(
             input_variables=["product_name","customer_name","manager_name","email","phone","length","review"], 
             template="""
-
                     Human: 
                     
                     I'm the manager of re:Invent retails. 
@@ -528,7 +537,7 @@ def create_review_response(request, product_id, review_id):
                     """
                 )
 
-        # Pass in form values to the prompt template
+        # STEP 6 - Initialize prompt template with all the prompt input variables.
         prompt = prompt_template.format(product_name=product_name,
                                          customer_name=review.first_name,
                                          manager_name=request.user.full_name(),
@@ -537,7 +546,7 @@ def create_review_response(request, product_id, review_id):
                                          length=max_length,
                                          review=review_text)
         
-        # Generate response to customer review using prompt constructed above
+        # STEP 7 - Call the LLM from Bedrock and retrieve the generated response to customer review.
         response = textgen_llm(prompt)
 
         # Get the second paragraph i.e, only the response to customer review
@@ -546,43 +555,43 @@ def create_review_response(request, product_id, review_id):
     except Exception as e:
         raise e
 
-    # set session parameters to use in HTML template
+    # STEP 8 - Set Django session variables which will be used in the HTML template to display the results.
     request.session['generated_response'] = generated_response
     request.session['draft_prompt'] = prompt
     request.session['draft_flag'] = True
     request.session.modified = True
 
-    # redirect to the previous URL (i.e., create_response.html). 
-    # From there, user can either save review response or regenerate it.
+    # STEP 9 - Re-direct to the same page. Now the page will display the generated response to customer review from Bedrock.
+    url = request.META.get('HTTP_REFERER')
     return redirect(url)
+
 
 #### FEATURE 3 - CREATE NEW DESIGN IDEAS FROM PRODUCT ####
 
 # This function is used for creating design ideas (images) for a product
 def create_design_ideas(request, product_id):
-    # get current URL for redirecting
-    url = request.META.get('HTTP_REFERER')
-    # get product from product ID
+
+    # STEP 1 - The product ID will be passed from the retail website. Filter out the Product object using that product ID. 
+    # Get the S3 bucket name from the Django configuration file (we have already configured the S3 bucket name). This is the bucket where we store the generated images. 
     single_product = Product.objects.get(id=product_id)
-    # get S3 bucket name from config file. this bucket was created as a part of the workshop. 
     bucket_name = config('AWS_STORAGE_BUCKET_NAME')
     
     try:
-        # if user chose to delete previously generated image from Stable Diffusion model
+        # If user chose to delete previously generated image from Stable Diffusion model 
         if 'delete_previous' in request.GET:
             # delete previously generated image  
             product_gallery_del = ProductGallery.objects.filter(product=single_product, image=request.session['image_file_path'])
             if product_gallery_del:
                 # Delete previously generated image from S3
                 s3.delete_object(Bucket=bucket_name, Key=request.session['image_file_path'])
-                # Delete this image in product image gallery in Django DB
+                # Delete this image in product image gallery in Django
                 product_gallery_del.delete()
                 request.session['image_flag'] = False
             # redirect to design studio
             messages.info(request, "Deleted previously generated design idea. You can now create a new design idea.")
             return redirect('design_studio', single_product.id)
         
-        # IF user chose to delete all generated images from Stable Diffusion model
+        # If user chose to delete all generated images from Stable Diffusion model
         if 'delete_all' in request.GET:
             # delete existing image gallery 
             request.session['image_flag'] = False
@@ -591,7 +600,7 @@ def create_design_ideas(request, product_id):
                  # Delete all generated images from S3
                 for x in product_gallery_del:
                     s3.delete_object(Bucket=bucket_name, Key="media/"+str(x.image))
-                # Delete product image gallery in Django DB
+                # Delete product image gallery in Django
                 product_gallery_del.delete()
             # redirect to product page
             messages.info(request, "Deleted all generated designs")
@@ -599,14 +608,15 @@ def create_design_ideas(request, product_id):
         
         # Generate new images using Bedrock
         else:
-            # Open product image
+            # STEP 2 - Every product has an image in the catalog. Open the product's image. 
+            # Resize product image to 512x512 and convert to base64 string format to comply with the requirements for Stable Diffusion LLM. 
             response = s3.get_object(Bucket=bucket_name, Key="media/"+str(single_product.images))
             input_file_stream = response['Body']
             image = Image.open(input_file_stream)
-
-            # Resize product image to 512x512 for Stable Diffusion
             resize = image.resize((512,512))
+            init_image_b64 = image_to_base64(resize)
 
+            # STEP 3 - Get the Stable Diffusion inference parameters passed from the retail website 
             # This prompt is used to generate new ideas from the existing image
             change_prompt = request.GET.get('change_prompt')
 
@@ -626,8 +636,6 @@ def create_design_ideas(request, product_id):
             seed = random.randint(1, 1000000) if request.GET.get('seed') is None else int(request.GET.get('seed'))
             style_preset = "photographic" if request.GET.get('style_preset') is None else request.GET.get('style_preset')
 
-            # Convert image to base64 string
-            init_image_b64 = image_to_base64(resize)
 
             # Construct request body for Stable Diffusion model
             sd_request = json.dumps({
@@ -645,10 +653,11 @@ def create_design_ideas(request, product_id):
                         "denoising_strength": denoising_strength
                     })
             
-            # Invoke Stable Diffusion model
+            # STEP 4 - Invoke the Stable Diffusion model from Bedrock passing all the inference parameters 
             response = boto3_bedrock.invoke_model(body=sd_request, modelId="stability.stable-diffusion-xl")
 
-            # Extract image from response body
+            # STEP 5 - Extract image from the API response
+            # Save the image to S3 bucket and the product's image gallery
             response_body = json.loads(response.get("body").read())
             genimage_b64_str = response_body["artifacts"][0].get("base64")
             genimage = Image.open(io.BytesIO(base64.decodebytes(bytes(genimage_b64_str, "utf-8"))))
@@ -673,7 +682,7 @@ def create_design_ideas(request, product_id):
             product_gallery.image = 'store/products/' + image_file_path
             product_gallery.save()
 
-            # Set session parameters to use in HTML template
+            # STEP 6 - Set Django session variables which will be used in the HTML template to display the generated image. 
             request.session['change_prompt'] = change_prompt
             request.session['negative_prompt'] = negprompts
             request.session['image_file_path'] = 'store/products/' + image_file_path
@@ -687,27 +696,26 @@ def create_design_ideas(request, product_id):
     except Exception as e: 
         raise e
         
-    # redirect to the previous URL (i.e., studio.html).
+    # STEP 7 - Re-direct to the same page. Now the page will display the generated design ideas from Bedrock.
+    url = request.META.get('HTTP_REFERER')
     return redirect(url)
 
 
 #### FEATURE 4 - SUMMARIZE CUSTOMER REVIEWS FOR A PRODUCT ####
-
+#### FEATURE 4 - SUMMARIZE CUSTOMER REVIEWS FOR A PRODUCT ####
 # This function is used for summarizing customer reviews using LLM from Bedrock
 def generate_review_summary(request, product_id):
-    # Get current URL for redirecting
-    url = request.META.get('HTTP_REFERER')
-    # Get product from product ID
+    #  STEP 1 - The product ID will be passed from the retail website. 
+    # Filter out the Product object using that product ID and get all the customer reviews for this product
     single_product = Product.objects.get(id=product_id)
-    # Get all customer reviews for this product
     product_reviews = ReviewRating.objects.filter(product=single_product)
 
     chunk_size = int(request.POST.get('chunk_size') or 1000)
     chunk_overlap = int(request.POST.get('chunk_overlap') or 100)
 
-    # Get a list of customer reviews for this product and enclose them in <review></review> tags
-    # This will be used in the prompt template for summarizing customer reviews
-    # Doing it this way helps LLM understand our instruction better
+    # Enclose all the customer reviews in <review></review> tags
+    # this will be used in the prompt template for summarizing customer reviews
+    # doing it this way helps LLM understand our instruction better
     review_digest = ''
 
     for review in product_reviews:
@@ -715,6 +723,7 @@ def generate_review_summary(request, product_id):
         review_digest += review.review + '\n'
         review_digest += "</review>" + '\n\n'
 
+    # STEP 2 - Split the reviews into chunks using LangChain's TextSplitter transformer
     # Let's split our reviews into chunks using Langchain's RecursiveCharacterTextSplitter
     # chunk size and overlap are defined as input parameters
     from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -724,6 +733,7 @@ def generate_review_summary(request, product_id):
     customer_reviews = text_splitter.create_documents([review_digest])
 
     try:
+        # STEP 3 - Get the inference parameter for the LLM from the retail website 
         # If user chose Claude
         if 'Claude' in request.POST.get('llm'):
             #Inference parameters for Claude Anthropic
@@ -759,7 +769,8 @@ def generate_review_summary(request, product_id):
         else:
             pass
 
-        # Create prompt for summarizing customer reviews. Passing product name and all the customer reviews as parameters to the prompt template. 
+        # STEP 4 - Create prompt for summarizing customer reviews. 
+        # Passing product name and all the customer reviews as parameters to the prompt template. 
         summary_prompt='''
 
             Human: 
@@ -796,7 +807,8 @@ def generate_review_summary(request, product_id):
             
         '''
         
-        # Create prompt template with two input variables - product name and text i.e, customer reviews for this product
+        # STEP 5 - Create prompt template with two input variables: 
+        # product name and text i.e, customer reviews for this product
         summary_prompt_template = PromptTemplate(
             template=summary_prompt, 
             input_variables=['product_name','text']
@@ -804,7 +816,7 @@ def generate_review_summary(request, product_id):
 
         summary_prompt_string = summary_prompt_template.format(product_name=single_product.product_name, text=customer_reviews)
 
-        # Use Langchain's load_summarize_chain to summarize the product reviews
+        # STEP 6 - Invoke Langchain's load_summarize_chain to summarize the product reviews
         # Chain type "stuff" takes the list of customer reviews, inserts them all into a prompt and passes that prompt to an LLM.
         from langchain.chains.summarize import load_summarize_chain
 
@@ -815,13 +827,13 @@ def generate_review_summary(request, product_id):
             verbose=False
         )
 
-        # Pass in the input variables to the prompt template and invoke the summary chain using Bedrock LLM 
+        # STEP 7 - Pass in the input variables to the prompt template and invoke the summary chain using Bedrock LLM 
         summary=summary_chain.run({
                 "product_name": single_product.product_name,
                 "input_documents": customer_reviews
                 })
 
-        # Set session parameters to use in HTML template
+        # STEP 8 - Set session parameters to use in HTML template
         request.session['generated_summary'] = summary
         request.session['summary_prompt'] = summary_prompt_string
         request.session['summary_flag'] = True
@@ -830,8 +842,10 @@ def generate_review_summary(request, product_id):
     except Exception as e: 
         raise e
 
-    # redirect to the previous URL (i.e., generate_summary.html).
+    # STEP 9 - Re-direct to the same page. Now the page will display the summarized product review from Bedrock.    
+    url = request.META.get('HTTP_REFERER')
     return redirect(url)
+
 
 
 #### FEATURE 5 - QUESTION ANSWERING WITH SQL GENERATION ####
@@ -844,30 +858,28 @@ def ask_question(request):
     describe_query_result = ''
 
     if 'question' in request.GET:
-        # get user question from web application 
+        # STEP 1 - Get the user question asked in natural language from the retail web application 
         question = request.GET.get('question')
 
-        # read Postgres schema file stored in S3
+        # STEP 2 - Get the schema file from S3 that has information about the tables storing the retail web application data 
         s3 = boto3.client('s3')
         resp = s3.get_object(Bucket=config('AWS_STORAGE_BUCKET_NAME'), Key="data/schema-postgres.sql")
         schema = resp['Body'].read().decode("utf-8")
 
-        # Prompt template for LLM
-        # This prompt template will generate an SQL query based on the schema passed above. 
+        # STEP 3 - Create a prompt template to generate an SQL query based on the question and the database schema. 
         # We are passing PostgresQL documentation to help with the SQL generation. 
         # Generated query will be embedded in <query></query> tags
         prompt_template = """
-
             Human: Create an Postgres SQL query for a retail website to answer the question keeping the following rules in mind: 
             
             1. Database is implemented in Postgres SQL.
             2. Follow the Postgres syntax carefully while generating the query.
             3. Enclose the query in <query></query>. 
             4. Use "like" and upper() for string comparison on both left hand side and right hand side of the expression. For example, if the query contains "jackets", use "where upper(product_name) like upper('%jacket%')". 
-	    5. Do not use upper() on integer or non-string or non-varchar table columns!
+	        5. Do not use upper() on integer or non-string or non-varchar table columns!
             6. If the question is generic, like "where is mount everest" or "who went to the moon first", then do not generate any query in <query></query> and do not answer the question in any form. Instead, mention that the answer is not found in context.
-            7. If the question is not related to the schema, then do not generate any query in <query></query> and do not answer the question in any form. Instead, mention that the answer is not found in context.  
-	    8. If the question is asked in a language other than English, convert the question into English before constructing the SQL query. The string and varchar table columns in the database are always in English.  
+            7. If the question is not related to the schema, then do not generate any query in <query></query> and do not answer the question in any form. Instead, mention that the answer is not found in context.
+            8. If the question is asked in a language other than English, convert the question into English before constructing the SQL query. The string and varchar table columns in the database are always in English.  
 
             <schema>
                 {schema}
@@ -885,11 +897,11 @@ def ask_question(request):
         # Initialize LLM
         llm = Bedrock(model_id="anthropic.claude-instant-v1", client=boto3_bedrock)
         
-        # Pass question and postgres schema of the web application
+        # Initialize prompt template with the question and database schema
         prompt = prompt_vars.format(question=question, schema=schema)
 
         try: 
-            # Invoke LLM and get response
+            # STEP 4 - Call the LLM from Bedrock to generate the SQL query based on the question and the database schema. 
             llm_response = llm(prompt)
 
             # Check if query is generated under <query></query> tags as instructed in our prompt
@@ -901,6 +913,7 @@ def ask_question(request):
                 query=''
             
             else: 
+                # STEP 5 - Extract the query from the LLM response and execute the query on the PostgreSQL database. 
                 is_query_generated = True
                 # Extract the query from the response
                 query = extract_strings_recursive(llm_response, "query")[0]
@@ -937,7 +950,7 @@ def ask_question(request):
 
                 print("Query result: \n" +resultset)
 
-                # Prompt template for LLM
+                # STEP 6 - Invoke the Bedrock LLM once again to interpret the query results 
                 # This prompt template defines rules while describing query result. 
                 # This is the final result that will be seen by the user as an answer to their question. 
                 # Idea is to derive natural language answer for a natural language question. 
@@ -978,7 +991,7 @@ def ask_question(request):
         except Exception as e:
             query = "Following exception was received. Please try again.\n\n" + str(e)
 
-        # Set context variables for HTML template
+        # STEP 7 - Set Django session variables which will be used in the HTML template to display the answer
         context = {
             "question": question,
             "query": query,
@@ -986,21 +999,21 @@ def ask_question(request):
             "describe_query_result": describe_query_result,
         }
 
-    # Render HTML template
+    # STEP 8 - Re-direct to the same page. Now the page will display the generated answer from Bedrock.
     return render(request, 'store/question.html', context)
 
-#### FEATURE 6 - VECTOR SEARCH ####
 
+#### FEATURE 6 - VECTOR SEARCH ####
 # This function is used for searching similar products using vector embeddings
 def vector_search(request):
     if 'keyword' in request.GET:
         # Get search keyword from user 
         keyword = request.GET['keyword']
         if keyword:
-            # Initialize Titan embeddings model
+            # STEP 1 - Initialize Titan embeddings model.
             bedrock_embeddings = BedrockEmbeddings(model_id="amazon.titan-embed-text-v1", client=boto3_bedrock)
 
-            # Generate vector embeddings for the search keyword
+            # STEP 2 - Generate vector embeddings for the search keyword. Example "red dress".
             search_embedding = list(bedrock_embeddings.embed_query(keyword))
 
             # Get database connection details from Secrets Manager
@@ -1021,7 +1034,7 @@ def vector_search(request):
             register_vector(dbconn)
             cur = dbconn.cursor()
 
-            # Search similar products using vector embeddings
+            # STEP 3 - Search for similar products using the vector embeddings stored in RDS Postgres database
             # Please note that in order to save time, all the 8500+ vector embeddings are pre-populated into your Amazon RDS database instance 
             # using pgvector extension
             cur.execute("""SELECT id, url, description, descriptions_embeddings 
@@ -1033,7 +1046,7 @@ def vector_search(request):
             r = cur.fetchall()
             product_count = len(r)
 
-            # Print similarity search results to web application
+            # STEP 4 - Fetch the similarity search results
             combined = []
             for x in r:
                 c = {}
@@ -1058,14 +1071,16 @@ def vector_search(request):
             cur.close()
             dbconn.close()
 
-            # Set context variables for HTML template
+            # STEP 5 - Set context variables for HTML template to display the similarity search results
             context = {
                 'keyword': keyword,
                 'combined': combined,
                 'product_count': product_count,
             }
     
-    # Render HTML template
+    # Render the HTML template with the search results
     return render(request, 'store/vector.html', context)
+
+
 
 ####################### END SECTION - IMPLEMENT GENAI FEATURES FOR WORKSHOP ##########################
