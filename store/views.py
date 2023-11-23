@@ -692,23 +692,35 @@ def create_design_ideas(request, product_id):
 #### FEATURE 4 - SUMMARIZE CUSTOMER REVIEWS FOR A PRODUCT ####
 
 # This function is used for summarizing customer reviews using LLM from Bedrock
+# This function is used for summarizing customer reviews using LLM from Bedrock
 def generate_review_summary(request, product_id):
-    # get current URL for redirecting
+    # Get current URL for redirecting
     url = request.META.get('HTTP_REFERER')
-    # get product from product ID
+    # Get product from product ID
     single_product = Product.objects.get(id=product_id)
-    # get all customer reviews for this product
+    # Get all customer reviews for this product
     product_reviews = ReviewRating.objects.filter(product=single_product)
 
-    # get a list of customer reviews for this product and enclose them in <review></review> tags
-    # this will be used in the prompt template for summarizing customer reviews
-    # doing it this way helps LLM understand our instruction better
+    chunk_size = int(request.GET.get('chunk_size') or 4000)
+    chunk_overlap = int(request.GET.get('chunk_overlap') or 100)
+
+    # Get a list of customer reviews for this product and enclose them in <review></review> tags
+    # This will be used in the prompt template for summarizing customer reviews
+    # Doing it this way helps LLM understand our instruction better
     review_digest = ''
 
     for review in product_reviews:
         review_digest += "<review>" + '\n'
         review_digest += review.review + '\n'
         review_digest += "</review>" + '\n\n'
+
+    # Let's split our reviews into chunks using Langchain's RecursiveCharacterTextSplitter
+    # chunk size and overlap are defined as input parameters
+    from langchain.text_splitter import RecursiveCharacterTextSplitter
+    text_splitter = RecursiveCharacterTextSplitter(
+        separators=["\n\n", "\n"], chunk_size=chunk_size, chunk_overlap=chunk_overlap
+    )
+    customer_reviews = text_splitter.create_documents([review_digest])
 
     try:
         # If user chose Claude
@@ -722,7 +734,7 @@ def generate_review_summary(request, product_id):
             inference_modifier['stop_sequences'] = ["\n\nHuman"]
 
             # Initialize Claude LLM
-            textgen_llm = Bedrock(
+            textsumm_llm = Bedrock(
                 model_id="anthropic.claude-instant-v1",
                 client=boto3_bedrock,
                 model_kwargs=inference_modifier,
@@ -737,8 +749,8 @@ def generate_review_summary(request, product_id):
             inference_modifier['topP'] = int(request.GET.get('titan_top_p') or 250)
 
             # Initialize Titan LLM
-            textgen_llm = Bedrock(
-                model_id="amazon.titan-tg1-large",
+            textsumm_llm = Bedrock(
+                model_id="amazon.titan-text-express-v1",
                 client=boto3_bedrock,
                 model_kwargs=inference_modifier,
                 )
@@ -747,31 +759,70 @@ def generate_review_summary(request, product_id):
             pass
 
         # Create prompt for summarizing customer reviews. Passing product name and all the customer reviews as parameters to the prompt template. 
-        prompt_template = PromptTemplate(
-            input_variables=["product_name","reviews"],
-            template="""
+        summary_prompt='''
 
-                Human: Provide a review summary including pros and cons based on the customer reviews for the product {product_name}. This summary will be updated in the product webpage. Customer reviews are enclosed in <customer_reviews> tag. 
-        
-                <customer_reviews>
-                    {reviews}
-                <customer_reviews>
+            Human: 
+
+            Your task is to summarize the customer reviews for the product {product_name}. 
+            Following are the customer reviews enclosed in <customer_reviews> tag. 
+            
+            <customer_reviews>
+                `{text}`
+            </customer_reviews>
+            
+            <example_review_summary_format>
+
+            Here's a customer review summary of {product_name}
+            Pros:
                 
-                Assistant:
+                - pro 1
+                - pro 2 
+                
+            Cons:
+            
+                - con 1 
+                - con 2
+            
+            Overall summary of the customer reviews. 
 
-                """
-            )
+            </example_review_summary_format>
+
+            Do not suggest the customer to make a purchasing decision. 
+            Overall summary should be objective and should only echo the customer reviews.
+            
+            
+            Assistant:
+            
+        '''
         
-        # Pass in values to the prompt template
-        prompt = prompt_template.format(product_name=single_product.product_name,
-                                         reviews=review_digest)
+        # Create prompt template with two input variables - product name and text i.e, customer reviews for this product
+        summary_prompt_template = PromptTemplate(
+            template=summary_prompt, 
+            input_variables=['product_name','text']
+        )
 
-        # Generate review summary using prompt constructed above
-        response = textgen_llm(prompt)
+        summary_prompt_string = summary_prompt_template.format(product_name=single_product.product_name, text=customer_reviews)
+
+        # Use Langchain's load_summarize_chain to summarize the product reviews
+        # Chain type "stuff" takes the list of customer reviews, inserts them all into a prompt and passes that prompt to an LLM.
+        from langchain.chains.summarize import load_summarize_chain
+
+        summary_chain = load_summarize_chain (
+            llm=textsumm_llm,
+            chain_type='stuff',
+            prompt=summary_prompt_template,
+            verbose=False
+        )
+
+        # Pass in the input variables to the prompt template and invoke the summary chain using Bedrock LLM 
+        summary=summary_chain.run({
+                "product_name": single_product.product_name,
+                "input_documents": customer_reviews
+                })
 
         # Set session parameters to use in HTML template
-        request.session['generated_summary'] = response
-        request.session['summary_prompt'] = prompt
+        request.session['generated_summary'] = summary
+        request.session['summary_prompt'] = summary_prompt_string
         request.session['summary_flag'] = True
         request.session.modified = True
 
